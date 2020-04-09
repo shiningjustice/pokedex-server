@@ -1,5 +1,6 @@
 'use strict'; 
 
+const knex = require('knex');
 const app = require('./app');
 const { PORT, DATABASE_URL } = require('./config');
 
@@ -9,7 +10,5 @@ const db = knex({
 });
 
 app.set('db', db);
-
-const PORT = process.env.PORT || 8000; 
 
 app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
