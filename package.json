@@ -12,8 +12,6 @@
     "seed": "psql -U admin -f seeds/seed.tables.sql -d pokedex",
     "seed:prod": "psql -U admin -f seeds/seed.tables.sql -d \"$(heroku config:get DATABASE_URL)\"",
     "migrate:production": "env SSL=true DATABASE_URL=$(heroku config:get DATABASE_URL) npm run migrate",
-    "seed": "psql -U admin -f seeds/seed.tables.sql -d pokedex",
-    "seed:prod": "psql -U admin -f seeds/seed.tables.sql -d \"$(heroku config:get DATABASE_URL)\"",
     "predeploy": "npm audit fix",
     "deploy": "git push heroku master"
   },
