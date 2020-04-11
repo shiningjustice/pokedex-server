@@ -48,6 +48,37 @@ function makeAuthHeader(user, secret = process.env.JWT_SECRET) {
   return `Bearer ${token}`;
 }
 
+const categoryHelpers = {
+  expectedLength: 20,
+  testIndex: 4,
+  page: 1,
+  categories: [
+    {
+      category: 'generation', 
+      subcategory: 'iv',
+      expectedName: 'monferno',
+      expectedId: 391
+    },
+    {
+      category: 'type', 
+      subcategory: 'fire',
+      expectedName: 'ninetales',
+      expectedId: 38
+    },
+    {
+      category: 'shape', 
+      subcategory: 'ball',
+      expectedName: 'ditto',
+      expectedId: 132
+    },
+    {
+      category: 'color', 
+      subcategory: 'pink',
+      expectedName: 'slowpoke',
+      expectedId: 79
+    }
+  ]
+};
 
 /**
  * remove data from tables and reset sequences for SERIAL id fields
@@ -87,6 +118,7 @@ module.exports = {
   makeKnexInstance,
   usersArray,
   makeAuthHeader,
+  categoryHelpers,
   cleanTables,
   seedUsers
 }
