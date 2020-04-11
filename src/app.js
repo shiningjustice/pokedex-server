@@ -9,6 +9,7 @@ const { NODE_ENV } = require('./config');
 const userRouter = require('./user/user-router');
 const authRouter = require('./auth/auth-router');
 const dataRouter = require('./data/data-router');
+const errorHandler = require('../src/helpers/errorHandler');
 
 const app = express(); 
 
@@ -27,17 +28,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/data', dataRouter);
 app.use('/api/user', userRouter);
 
-app.use(function errorHandler(error, req, res, next) {
-  let response;
-  if (NODE_ENV === 'production') {
-    response = { error: { message: 'server error' } }
-  } else {
-    console.error(error);
-    response = { message: error.message, error };
-  }
-  res
-    .status(500)
-    .json(response);
-})
+app.use(errorHandler);
 
 module.exports = app;
