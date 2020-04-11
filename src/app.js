@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const { NODE_ENV } = require('./config');
 const userRouter = require('./user/user-router');
 const authRouter = require('./auth/auth-router');
+const dataRouter = require('./data/data-router');
 
 const app = express(); 
 
@@ -23,6 +24,7 @@ app.get('/', (req, res) => {
   res.send('Hello, world!');
 });
 app.use('/api/auth', authRouter);
+app.use('/api/data', dataRouter);
 app.use('/api/user', userRouter);
 
 app.use(function errorHandler(error, req, res, next) {
