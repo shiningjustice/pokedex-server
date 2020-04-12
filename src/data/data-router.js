@@ -1,21 +1,40 @@
+/*****************************************************************
+	IMPORTS
+******************************************************************/
 const express = require('express');
 const Pokedex = require('pokedex-promise-v2');
+const { optionalAuth } = require('../middleware/jwt-auth');
+const { addSavedData } = require('./saved-data-helper');
 
+/*****************************************************************
+	VARIABLES/HELPER FUNCS
+******************************************************************/
 const dataRouter = express.Router();
 const P = new Pokedex();
 
 const mainRoute = '/api/v2';
-const mainRoutePoke = `${mainRoute}/pokemon`;
 const itemsPerPage = 20;
 const offset = (pageNumber) => itemsPerPage * (pageNumber - 1);
 const validCategories = ['type', 'shape', 'color', 'generation'];
 const generations = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii'];
 
+/*****************************************************************
+	ROUTES
+******************************************************************/
+dataRouter.use(optionalAuth);
+dataRouter.route('/pokemon').get(getAllPokemon);
+dataRouter.route('/:category').get(getSubcategories);
+dataRouter.route('/pokemon/search').get(getRequestedPokemon, addSavedData);
+dataRouter.route('/:category/search').get(getFilteredPokemon);
+
+/*****************************************************************
+	ROUTE FUNCTIONS/MIDDLWARE
+******************************************************************/
 /**
  * @returns paginated results for pokemon by pokemon number
  * @query {number} - page number
  */
-dataRouter.route('/pokemon?').get(async (req, res, next) => {
+async function getAllPokemon (req, res, next) {
 	const pageNumber = req.query.page;
 
 	// require page number
@@ -24,19 +43,19 @@ dataRouter.route('/pokemon?').get(async (req, res, next) => {
 
 	try {
 		const pokemon = await P.resource(
-			`${mainRoutePoke}/?limit=${itemsPerPage}&offset=${offset(pageNumber)}`
+			`${mainRoute}/pokemon/?limit=${itemsPerPage}&offset=${offset(pageNumber)}`
 		);
 
 		return res.status(200).json(pokemon);
 	} catch (error) {
 		next(error);
 	}
-});
+};
 
 /**
  * @description Returns subcategories of requested category
  */
-dataRouter.route('/:category').get(async (req, res, next) => {
+async function getSubcategories (req, res, next) {
 	let { category } = req.params;
 	const pageNumber = req.query.page;
 	let subcategories;
@@ -63,12 +82,15 @@ dataRouter.route('/:category').get(async (req, res, next) => {
 	} catch (error) {
 		next(error);
 	}
-});
+};
+
 
 /**
- * @description Returns requested Pokemon by id or number. Multiple queries can be submitted
+ * @description Returns requested Pokemon object by id or number (relative 
+ * size is much larger than `get /pokemon` object). Multiple queries allowed. 
+ * Calls next() if requested by valid user 
  */
-dataRouter.route('/pokemon/search?').get(async (req, res, next) => {
+async function getRequestedPokemon (req, res, next) {
 	let { name, id } = req.query;
 	let searchFor;
 
@@ -89,19 +111,26 @@ dataRouter.route('/pokemon/search?').get(async (req, res, next) => {
 	}
 
 	try {
-		return await P.getPokemonByName(searchFor).then((results) =>
-			res.status(200).json(results)
-		);
+		// const robustPokemonObjs = await P.getPokemonByName(searchFor);
+		const robustPokemonObjs = charmander;
+
+		if (req.user) {
+			req.pokemon = robustPokemonObjs;
+			next();
+		} else {
+			return res.status(200).json(robustPokemonObjs);
+		};
 	} catch (error) {
 		next(error);
 	}
-});
+};
 
 /**
- * @returns results of subcategory
- * Note: this will return ALL results for pokemon
+ * @description Returns pokemon of requested subcategory. If query to PokeAPI
+ * returns pokemon-species, and species contains multiple varieties, only the
+ * first pokemon variety will be returned
  */
-dataRouter.route('/:category/search?').get(async (req, res, next) => {
+async function getFilteredPokemon (req, res, next) {
 	const { category } = req.params;
 	const { name, page } = req.query;
 	const pageNumber = page;
@@ -147,23 +176,21 @@ dataRouter.route('/:category/search?').get(async (req, res, next) => {
 			total: 894,
 		},
 	];
+	let pokemonUrls = [];
 
-  // require category, name, page number
+	// require category, name, page number
 	if (!validCategories.includes(category)) {
 		return res.status(400).json({ error: 'invalid category' });
-  }
-  if (!name)
-    return res.status(400).json({ error: 'missing category name' });
+	}
+	if (!name) return res.status(400).json({ error: 'missing category name' });
 	if (!pageNumber)
 		return res.status(400).json({ error: 'missing page number' });
 
 	try {
-		let pokemonUrls = [];
-
-    //Category 'generation' pagination determined in server, so handled
-    //differently. Category 'type' immediately returns basic Pokemon objects
-    //(url + name) while 'color' and 'shape' imm. return basic Pokemon species
-    //objects, so handled differently too. 
+		//Category 'generation' pagination determined in server, so handled
+		//differently. Category 'type' immediately returns basic Pokemon objects
+		//(url + name) while 'color' and 'shape' imm. return basic Pokemon species
+		//objects, so handled differently too.
 		if (category === 'generation') {
 			genStr = name.toLowerCase();
 
@@ -178,36 +205,35 @@ dataRouter.route('/:category/search?').get(async (req, res, next) => {
 			);
 			pokemonUrls = basicPokemonObjs.results.map((obj) => obj.url);
 		} else if (category === 'type') {
-      const initialResult = await P.resource(
-        `${mainRoute}/${category}/${name}/?limit=${itemsPerPage}&offset=${offset}`
-      );
-      pokemonUrls = initialResult.pokemon.map(
-        (basicPObj) => basicPObj.pokemon.url
-      );
-    } else {
-      const initialResult = await P.resource(`${mainRoute}/pokemon-${category}/${name}`);
+			const typeObj = await P.resource(
+				`${mainRoute}/${category}/${name}/?limit=${itemsPerPage}&offset=${offset(pageNumber)}`
+			);
+			pokemonUrls = typeObj.pokemon.map(
+				(basicPObj) => basicPObj.pokemon.url
+			);
+		} else {
+			const categoryObject = await P.resource(
+				`${mainRoute}/pokemon-${category}/${name}`
+			);
 
-      // "imperfect" pagination (doesn't account for species having multiple varieties)
-      const speciesUrls = initialResult.pokemon_species
-        .slice(offset(pageNumber), offset(pageNumber) + 20)
-        .map((s) => s.url);
+			const speciesUrls = categoryObject.pokemon_species
+				.slice(offset(pageNumber), offset(pageNumber) + 20)
+				.map((s) => s.url);
 
-      const speciesObjs = await P.resource(speciesUrls);
-      // Species returns pokemon urls within "variety" array. Return the first,
-      // even if muliple
-      speciesObjs.forEach((s) => {
-        pokemonUrls.push(s.varieties[0].pokemon.url);
-      });
-    };
-    
-    const robustPokemonObjs = await P.resource(pokemonUrls.slice(0, 20));
-		return res.status(200).json(robustPokemonObjs);
+			const speciesObjs = await P.resource(speciesUrls);
+
+			// "imperfect" pagination (doesn't account for species having multiple
+			// varieties). Species returns pokemon urls within "variety" array. Return
+			// the first, even if muliple
+			speciesObjs.forEach((s) => {
+				pokemonUrls.push(s.varieties[0].pokemon.url);
+			});
+		}
+
+		return res.status(200).json(pokemonUrls);
 	} catch (error) {
 		next(error);
 	}
-});
-
-// ***************************************** !!!! CHANGE ITEMS PER PAGE LIMIT BACK TO VARIABLE
-// allow for multiple types of base string to be returned. extension is maybe multiple... but dont' allow for more than one category type!!!! so should nto be an array
+};
 
 module.exports = dataRouter;
