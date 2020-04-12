@@ -176,7 +176,7 @@ async function getFilteredPokemon (req, res, next) {
 			total: 894,
 		},
 	];
-	let pokemonUrls = [];
+	let basicPokemonObjs = [];
 
 	// require category, name, page number
 	if (!validCategories.includes(category)) {
@@ -200,17 +200,15 @@ async function getFilteredPokemon (req, res, next) {
 
 			const offsetPerGen = offset(pageNumber) + genStartingNum;
 
-			const basicPokemonObjs = await P.resource(
+			const initialResponse = await P.resource(
 				`/api/v2/pokemon/?limit=${itemsPerPage}&offset=${offsetPerGen}`
 			);
-			pokemonUrls = basicPokemonObjs.results.map((obj) => obj.url);
+			basicPokemonObjs = initialResponse.results;
 		} else if (category === 'type') {
 			const typeObj = await P.resource(
 				`${mainRoute}/${category}/${name}/?limit=${itemsPerPage}&offset=${offset(pageNumber)}`
 			);
-			pokemonUrls = typeObj.pokemon.map(
-				(basicPObj) => basicPObj.pokemon.url
-			);
+			basicPokemonObjs = typeObj.pokemon.map(pObj => pObj.pokemon);
 		} else {
 			const categoryObject = await P.resource(
 				`${mainRoute}/pokemon-${category}/${name}`
@@ -226,11 +224,11 @@ async function getFilteredPokemon (req, res, next) {
 			// varieties). Species returns pokemon urls within "variety" array. Return
 			// the first, even if muliple
 			speciesObjs.forEach((s) => {
-				pokemonUrls.push(s.varieties[0].pokemon.url);
+				basicPokemonObjs.push(s.varieties[0].pokemon);
 			});
 		}
 
-		return res.status(200).json(pokemonUrls);
+		return res.status(200).json(basicPokemonObjs);
 	} catch (error) {
 		next(error);
 	}
