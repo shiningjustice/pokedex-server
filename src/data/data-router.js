@@ -111,8 +111,7 @@ async function getRequestedPokemon (req, res, next) {
 	}
 
 	try {
-		// const robustPokemonObjs = await P.getPokemonByName(searchFor);
-		const robustPokemonObjs = charmander;
+		const robustPokemonObjs = await P.getPokemonByName(searchFor);
 
 		if (req.user) {
 			req.pokemon = robustPokemonObjs;
