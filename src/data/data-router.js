@@ -3,8 +3,8 @@
 ******************************************************************/
 const express = require('express');
 const Pokedex = require('pokedex-promise-v2');
+const SavedDataService = require('../saved-data/saved-data-service');
 const { optionalAuth } = require('../middleware/jwt-auth');
-const { addSavedData } = require('./saved-data-helper');
 
 /*****************************************************************
 	VARIABLES/HELPER FUNCS
@@ -24,7 +24,7 @@ const generations = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii'];
 dataRouter.use(optionalAuth);
 dataRouter.route('/pokemon').get(getAllPokemon);
 dataRouter.route('/:category').get(getSubcategories);
-dataRouter.route('/pokemon/search').get(getRequestedPokemon, addSavedData);
+dataRouter.route('/pokemon/search').get(getRequestedPokemon);
 dataRouter.route('/:category/search').get(getFilteredPokemon);
 
 /*****************************************************************
@@ -34,7 +34,7 @@ dataRouter.route('/:category/search').get(getFilteredPokemon);
  * @returns paginated results for pokemon by pokemon number
  * @query {number} - page number
  */
-async function getAllPokemon (req, res, next) {
+async function getAllPokemon(req, res, next) {
 	const pageNumber = req.query.page;
 
 	// require page number
@@ -46,16 +46,16 @@ async function getAllPokemon (req, res, next) {
 			`${mainRoute}/pokemon/?limit=${itemsPerPage}&offset=${offset(pageNumber)}`
 		);
 
-		return res.status(200).json(pokemon);
+		return res.status(200).json(pokemon.results);
 	} catch (error) {
 		next(error);
 	}
-};
+}
 
 /**
  * @description Returns subcategories of requested category
  */
-async function getSubcategories (req, res, next) {
+async function getSubcategories(req, res, next) {
 	let { category } = req.params;
 	const pageNumber = req.query.page;
 	let subcategories;
@@ -82,15 +82,15 @@ async function getSubcategories (req, res, next) {
 	} catch (error) {
 		next(error);
 	}
-};
-
+}
 
 /**
- * @description Returns requested Pokemon object by id or number (relative 
- * size is much larger than `get /pokemon` object). Multiple queries allowed. 
- * Calls next() if requested by valid user 
+ * @description Returns requested Pokemon object by id or number (relative
+ * size is much larger than `get /pokemon` object). Multiple queries allowed.
+ * Gets saved data for pokemon if user valid
  */
-async function getRequestedPokemon (req, res, next) {
+async function getRequestedPokemon(req, res, next) {
+	console.log(`getRe'dPokemon`);
 	let { name, id } = req.query;
 	let searchFor;
 
@@ -111,25 +111,65 @@ async function getRequestedPokemon (req, res, next) {
 	}
 
 	try {
-		const robustPokemonObjs = await P.getPokemonByName(searchFor);
+		console.log('in try loop');
+		const pokemonData = await P.getPokemonByName(searchFor);
+		// const pokemonData = [ {id: 1}, {id: 2} ];
+		// const pokemonData = { id: 1 };
+		console.log(pokemonData.name);
+		const savedFields = ['favorited', 'notes'];
 
 		if (req.user) {
-			req.pokemon = robustPokemonObjs;
-			next();
-		} else {
-			return res.status(200).json(robustPokemonObjs);
-		};
+			console.log('req.user is true');
+
+			if (Array.isArray(pokemonData)) {
+				console.log("`pokemonData` c'est un array");
+
+				Promise.all(
+					pokemonData.map(async (pokemon) => {
+						console.log('here i am', pokemon.id);
+						const savedData = await SavedDataService.getUserSavedDataItem(
+							req.app.get('db'),
+							req.user.id,
+							pokemon.id
+						);
+
+						if (savedData) {
+							savedFields.forEach((field) => {
+								if (savedData[field]) pokemon[field] = savedData[field];
+							});
+						}
+					})
+				).then(() => res.status(200).json(pokemonData));
+			} else {
+				console.log(' i am not an array');
+				await SavedDataService.getUserSavedDataItem(
+					req.app.get('db'),
+					req.user.id,
+					pokemonData.id
+				).then((res) => {
+					const savedData = res[0];
+					if (savedData) {
+						savedFields.forEach((field) => {
+							if (savedData[field]) pokemonData[field] = savedData[field];
+							console.log(pokemonData[field]);
+						});
+						console.log(savedData);
+					}
+				});
+			}
+		}
+		return res.status(200).json(pokemonData);
 	} catch (error) {
 		next(error);
 	}
-};
+}
 
 /**
  * @description Returns pokemon of requested subcategory. If query to PokeAPI
  * returns pokemon-species, and species contains multiple varieties, only the
  * first pokemon variety will be returned
  */
-async function getFilteredPokemon (req, res, next) {
+async function getFilteredPokemon(req, res, next) {
 	const { category } = req.params;
 	const { name, page } = req.query;
 	const pageNumber = page;
@@ -205,9 +245,11 @@ async function getFilteredPokemon (req, res, next) {
 			basicPokemonObjs = initialResponse.results;
 		} else if (category === 'type') {
 			const typeObj = await P.resource(
-				`${mainRoute}/${category}/${name}/?limit=${itemsPerPage}&offset=${offset(pageNumber)}`
+				`${mainRoute}/${category}/${name}/?limit=${itemsPerPage}&offset=${offset(
+					pageNumber
+				)}`
 			);
-			basicPokemonObjs = typeObj.pokemon.map(pObj => pObj.pokemon);
+			basicPokemonObjs = typeObj.pokemon.map((pObj) => pObj.pokemon);
 		} else {
 			const categoryObject = await P.resource(
 				`${mainRoute}/pokemon-${category}/${name}`
@@ -231,6 +273,8 @@ async function getFilteredPokemon (req, res, next) {
 	} catch (error) {
 		next(error);
 	}
-};
+}
 
-module.exports = dataRouter;
+module.exports = {
+	dataRouter,
+};
