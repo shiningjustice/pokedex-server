@@ -90,7 +90,6 @@ async function getSubcategories(req, res, next) {
  * Gets saved data for pokemon if user valid
  */
 async function getRequestedPokemon(req, res, next) {
-	console.log(`getRe'dPokemon`);
 	let { name, id } = req.query;
 	let searchFor;
 
@@ -111,22 +110,16 @@ async function getRequestedPokemon(req, res, next) {
 	}
 
 	try {
-		console.log('in try loop');
 		const pokemonData = await P.getPokemonByName(searchFor);
-		// const pokemonData = [ {id: 1}, {id: 2} ];
-		// const pokemonData = { id: 1 };
-		console.log(pokemonData.name);
+
 		const savedFields = ['favorited', 'notes'];
 
 		if (req.user) {
-			console.log('req.user is true');
 
 			if (Array.isArray(pokemonData)) {
-				console.log("`pokemonData` c'est un array");
 
 				Promise.all(
 					pokemonData.map(async (pokemon) => {
-						console.log('here i am', pokemon.id);
 						const savedData = await SavedDataService.getUserSavedDataItem(
 							req.app.get('db'),
 							req.user.id,
@@ -141,7 +134,6 @@ async function getRequestedPokemon(req, res, next) {
 					})
 				).then(() => res.status(200).json(pokemonData));
 			} else {
-				console.log(' i am not an array');
 				await SavedDataService.getUserSavedDataItem(
 					req.app.get('db'),
 					req.user.id,
@@ -151,9 +143,7 @@ async function getRequestedPokemon(req, res, next) {
 					if (savedData) {
 						savedFields.forEach((field) => {
 							if (savedData[field]) pokemonData[field] = savedData[field];
-							console.log(pokemonData[field]);
 						});
-						console.log(savedData);
 					}
 				});
 			}

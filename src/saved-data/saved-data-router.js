@@ -23,51 +23,6 @@ savedDataRouter
 /*****************************************************************
 	ROUTE FUNCTIONS/MIDDLWARE
 ******************************************************************/
-/**
- * @description middleware function. Redirected here if user = true. Takes in
- * robust pokemon object or array of such and adds notes or favorites key:value
- * pairs based on user for pokemon object
- */
-// const getSavedAndAddToRes = async (result) => {
-//   console.log('in saved and add to res');
-//   console.log(Array.isArray(result));
-// 	try {
-// 		if (Array.isArray(result)) {
-//       console.log('i am an array');
-// 			for (let pokemon of result) {
-// 				const savedData = await SavedDataService.getUserSavedDataItem(
-// 					req.app.get('db'),
-// 					req.user.id,
-// 					pokemon.id
-// 				);
-
-// 				if (savedData) {
-// 					savedFields.forEach((field) => {
-// 						if (savedData.field) pokemon[field] = savedData[field];
-// 					});
-// 				}
-// 			}
-// 		} else {
-//       console.log(' i am not an array', req.user.id, result.id);
-// 			const savedData = await SavedDataService.getUserSavedDataItem(
-// 				req.app.get('db'),
-// 				req.user.id,
-// 				result.id
-// 			);
-
-// 			if (savedData) {
-//         console.log('saved data is true');
-// 				savedFields.forEach((field) => {
-// 					if (savedData[field]) result[field] = savedData[field];
-// 				});
-// 			}
-// 		}
-
-// 		return res.status(200).json(result);
-// 	} catch (error) {
-// 		next(error);
-// 	}
-// };
 
 /**
  * @description
@@ -76,7 +31,6 @@ savedDataRouter
  * @param {*} next
  */
 async function getAllFavoritedItems(req, res, next) {
-	console.log('userid', req.user.id);
 	try {
 		const allSaved = await SavedDataService.getUserFavorites(
 			req.app.get('db'),
@@ -86,7 +40,6 @@ async function getAllFavoritedItems(req, res, next) {
 		if (!Array.isArray(allSaved)) {
 			allSaved = [allSaved];
 		}
-		console.log({ allSaved });
 
 		Promise.all(
 			allSaved.map(async (data) => {
@@ -121,7 +74,6 @@ async function saveNewItem(req, res, next) {
 
 	for (const [key, value] of Object.entries(itemSavedFields)) {
 		if (!value) {
-			console.log(key, value);
 			return res.status(400).json({ error: `Missing ${key} in request body` });
 		}
 	}
@@ -132,7 +84,6 @@ async function saveNewItem(req, res, next) {
 			req.user.id,
 			id
 		);
-		console.log({itemAlreadySaved});
 		if (itemAlreadySaved) {
 			return next();
 		}
@@ -155,12 +106,9 @@ async function saveNewItem(req, res, next) {
 }
 
 async function updateItem(req, res, next) {
-	console.log(158, 'reqbody', req.body);
 	const { id, favorited, notes } = req.body;
 	const itemSavedFields = ['favorited', 'notes'];
 	const fieldsToUpdate = {};
-
-	console.log(163, { id }, { favorited }, { notes });
 
 	if (!id) {
 		return res.status(400).json({ error: `Missing id in request body` });
@@ -172,7 +120,6 @@ async function updateItem(req, res, next) {
 		}
 	});
 
-	console.log(175, { fieldsToUpdate });
 
 	if (!Object.keys(fieldsToUpdate).length) {
 		return res.status(400).json({ error: `Missing data in request body` });
@@ -185,8 +132,6 @@ async function updateItem(req, res, next) {
 			id
 		);
 
-		console.log(188, { currData });
-
 		if (Array.isArray(currData)) {
 			currData = currData[0];
 		}
@@ -195,14 +140,12 @@ async function updateItem(req, res, next) {
 		for (const [key, value] of Object.entries(fieldsToUpdate)) {
 			currData[key] = value;
 		}
-		console.log(195, 'currData', currData);
 		let falseCounter = 0;
 		savedFields.forEach((field) => {
 			if (!currData[field]) ++falseCounter;
 		});
 
 		if (falseCounter === 2) return next();
-		console.log(199, 'pokemonId', id);
 
 		if (fieldsToUpdate.notes) {
 			fieldsToUpdate.notes = xss(notes);
@@ -215,7 +158,6 @@ async function updateItem(req, res, next) {
 			fieldsToUpdate
 		);
 			
-		console.log(210, 'updateddata index', {updatedData}, updatedData);
 		return res.status(200).json(updatedData);
 	} catch (error) {
 		next(error);

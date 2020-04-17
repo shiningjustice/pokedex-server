@@ -6,7 +6,6 @@ const SavedDataService = {
 	},
 	// returns an array 
 	getUserSavedDataItem(db, user_id, pokemon_id) {
-		console.log(user_id, pokemon_id);
 		return db('saved_data')
 			.select('*')
 			.where({ id: pokemon_id, user_id: user_id })
