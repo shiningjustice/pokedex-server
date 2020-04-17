@@ -36,7 +36,7 @@ async function optionalAuth(req, res, next) {
   };
 }
 
-async function requireAuth(req, res, next) {
+async function requiredAuth(req, res, next) {
   const authToken = req.get('Authorization')  || '';
 
   let bearerToken; 
@@ -68,5 +68,5 @@ async function requireAuth(req, res, next) {
 
 module.exports = {
   optionalAuth,
-  requireAuth
+  requiredAuth
 };
