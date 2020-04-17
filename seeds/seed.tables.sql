@@ -12,6 +12,13 @@ VALUES
     -- password = "P@ssw0rd", salted by 12
     '$2a$12$97iynXdhkTqyWYjlISIIbevz0gPEq0QX7RstxZji87kMN.bdn01l2',
     'Admin'
+  ), 
+  (
+    2, 
+    'phoebe',
+    -- password = "P@ssw0rd", salted by 12
+    '$2a$12$97iynXdhkTqyWYjlISIIbevz0gPEq0QX7RstxZji87kMN.bdn01l2',
+    'Phoebe'
   );
 
 INSERT INTO "saved_data" ("id", "user_id", "favorited", "notes")
@@ -29,10 +36,16 @@ VALUES
     'I don''t know much about Pokemon so I won''t pretend I know anything relevant to add to these notes.'
   ),
   (
-    6, 
+    7, 
     1,
     true, 
     ''
+  ),
+  (
+    1,
+    2,
+    true,
+    'My first starter Pokemon'
   );
 
 COMMIT; 
