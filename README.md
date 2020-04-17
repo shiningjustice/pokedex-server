@@ -1,26 +1,30 @@
-# Express Boilerplate!
-
-This is a boilerplate project used for starting new projects!
+# Pokedex Server
 
 ## Set up
 
-Complete the following steps to start a new project (`NEW-PROJECT-NAME`):
+1. You'll need to [download PostgreSQL]('https://www.postgresql.org/download/')
+   if you haven't already. If you need more tips on setting it up I'd happy to
+   pass along some resources. 
 
-1. Clone this repository to your local machine `git clone https://github.com/shiningjustice/express-boilerplate <NEW-PROJECT-NAME>`
-2. `cd` into the cloned repository
-3. Make a fresh start of the git history for this project with `rm -rf .git && git init`
-4. Install the node dependencies `npm install`
-5. Move the example Environment file (rename) to `.env` that will be ignored by git and read by the express server `mv example.env .env`
-6. Edit the contents of the `package.json` to use `<NEW-PROJECT-NAME>` instead of `"name": "express-boilerplate",` (line 2)
+   Then create database `pokedex`.
 
-## Scripts
+2. Create an `.env` file and store the following (with substitutions):
 
-Start the application `npm start`
+```
+NODE_ENV=development
+PORT=8000
+TZ='UTC'
+MIGRATION_DB_HOST=127.0.0.1
+MIGRATION_DB_PORT=5432
+MIGRATION_DB_NAME=pokedex
+MIGRATION_DB_USER=[replace-me]
+MIGRATION_DB_PASS=[replace-me, is optional]
+DATABASE_URL="postgresql://admin@localhost/pokedex"
+JWT_SECRET=[replace-me]
+JWT_EXPIRY=3h
+API-TOKEN=[replace-me]
+```
 
-Start nodemon for the application `npm run dev`
-
-Run the tests `npm test`
-
-## Deploying
-
-When your new project is ready for deployment, add a new Heroku application with `heroku create`. This will make a new git remote called "heroku" and you can then `npm run deploy` which will push to this remote's master branch.
+3. Migrate your database with test users and data with `npm run migrate` (optional, you can also just populate users and favorites yourself)
+4. `npm install` to install dependencies.
+5. `npm run dev` will get the server up and running.
