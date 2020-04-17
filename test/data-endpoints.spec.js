@@ -29,11 +29,9 @@ describe.only('Data Endpoints', function () {
   // beforeEach('insert users', () => helpers.seedUsers(db, testUsers));
 
   /*****************************************************************
-    GET /api/data/pokemon
-
-    Get paginated pokemon results
+    GET /api/data/pokemon               get all pokemon
   ******************************************************************/
-  describe(`GET ${endpointPath}/pokemon? - all paginated pokemon results`, () => {
+  describe(`GET ${endpointPath}/pokemon - all paginated pokemon results`, () => {
     it(`responds 400 and message when sent without page number`, () => {
       return supertest(app)
         .get(`${endpointPath}/pokemon?page=`)
@@ -51,9 +49,7 @@ describe.only('Data Endpoints', function () {
   });
 
   /*****************************************************************
-    GET /api/data/:category
-
-    Get subcategories of requested category
+    GET /api/data/:category               get subcategories
   ******************************************************************/
   describe(`GET ${endpointPath}/:category - subcategories of requested category`, () => {
     it(`responds 400 'invalid category' when invalid category`, () => {
@@ -80,9 +76,7 @@ describe.only('Data Endpoints', function () {
   });
 
   /*****************************************************************
-    GET /api/data/pokemon/search?
-
-    Get requested Pokemon by id or number
+    GET /api/data/pokemon/search?                get req'd Pokemon
   ******************************************************************/
   describe(`GET ${endpointPath}/pokemon/search? - gets req'ed Pokemon by id or number`, () => {
     // if name and id are empty then it returns a 400, missing parameters
@@ -137,9 +131,7 @@ describe.only('Data Endpoints', function () {
   });
 
   /*****************************************************************
-    GET /api/data/:category/search?
-
-    Get results of subcategory
+    GET /api/data/:category/search?               get subcat results
   ******************************************************************/
   describe(`GET ${endpointPath}/:category/search?`, () => {
     it(`returns 400 'invalid category' when invalid category passed in`, () => {
