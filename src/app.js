@@ -8,7 +8,8 @@ const helmet = require('helmet');
 const { NODE_ENV } = require('./config');
 const userRouter = require('./user/user-router');
 const authRouter = require('./auth/auth-router');
-const dataRouter = require('./data/data-router');
+const { dataRouter } = require('./data/data-router');
+const { savedDataRouter } = require('./saved-data/saved-data-router');
 const errorHandler = require('../src/helpers/errorHandler');
 
 const app = express(); 
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 });
 app.use('/api/auth', authRouter);
 app.use('/api/data', dataRouter);
+app.use('/api/saved-data', savedDataRouter);
 app.use('/api/user', userRouter);
 
 app.use(errorHandler);
